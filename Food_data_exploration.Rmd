@@ -1,0 +1,143 @@
+---
+title: "Project 3"
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(colorspace)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This is the dataset we'll be working with:
+
+```{r message = FALSE, warning = FALSE}
+food <- readr::read_csv("https://wilkelab.org/DSC385/datasets/food_coded.csv")
+food
+```
+
+A detailed data dictionary for this dataset is available [here.](https://wilkelab.org/DSC385/datasets/food_codebook.pdf) The dataset was originally downloaded from Kaggle, and you can find additional information about the dataset [here.](https://www.kaggle.com/borapajo/food-choices/version/5)
+
+
+**Question:** Is GPA related to student income, the father's educational level, or the student's perception of what an ideal diet is?
+
+
+
+**Introduction:** *Using the Food Choices dataset, we aim to investigate whether a student's GPA is influenced by their income, their father's level of education, and their preferred diet. Our analysis will focus on four columns of the dataset: 'GPA', 'father_education', 'ideal_diet_coded', and 'income'. The GPA column contains a numeric value ranging from 0 to 4.00, reflecting the student's grade point average. The father's education level is categorized into one of five options: less than high school, high school degree, some college degree, college degree, and graduate degree. The ideal diet variable captures the student's preferred food choices and is coded into one of six categories: portion control, adding veggies/eating healthier food/adding fruit, balance, less sugar, home cooked/organic, current diet, more protein, and unclear. Finally, the income column records the student's yearly earnings, which are classified into the following ranges: less than $15,000, $15,001 to $30,000, $30,001 to $50,000, $50,001 to $70,000, $70,001 to $100,000, and higher than $100,000.*
+
+**Approach:** *In order to address our question, we utilized a range of data wrangling techniques. Initially, we examined our data by employing the summary function for GPA and the table function for the remaining variables. Our aim was to assess the quality of the data and ensure that it was accurate. To achieve this, we employed various data cleaning methods, such as replacing missing values with NA, rewording values that required modification, and converting the GPA column from a string to numeric values. Additionally, we made sure that categorical variables were represented in a human-readable format, and for variables with an inherent order, we ensured that the levels were ordered correctly.*
+
+*After completing the data cleaning process, we generated a separate visualization for each of the variables: student income, father’s educational level, and ideal diet. We used box plots to visualize the distributions of categorical variables since they provide more comprehensive information about the median, high-end, and low-end of GPA, allowing us to make better deductions. Box plots are superior to other plots in displaying distributions of categorical variables.*
+
+*Using these visualizations, we answered our question separately for each variable.*
+
+**Analysis:**
+
+```{r }
+
+# Your R code here
+food_list <- food %>% select(GPA, father_education, income, ideal_diet_coded)
+#lets take a look at the data
+
+#GPA Summary
+summary(as.numeric(food_list$GPA))
+unique(food_list$GPA)
+
+#Student's income Summary
+table(food_list$income, useNA = "ifany")
+
+#Father's education Summary
+table(food_list$father_education, useNA = "ifany")
+
+#Students' ideal diet summary
+table(food_list$ideal_diet_coded, useNA = "ifany")
+
+#Fixing up the gpa column
+food_list2 <- food_list %>% mutate(GPA = recode(GPA, "3.79 bitch" = "3.79"), GPA = recode(GPA, "nan" = "NA"), GPA = recode(GPA, "Personal" = "NA"), GPA = recode(GPA,"Unknown" = "NA"), GPA = as.numeric(GPA))
+
+#reordering the categorical variables
+food_list2 <- food_list2 %>% mutate( income = recode(income,
+                  "1" = "<$15,000", 
+                  "2" = "$15,001-$30,000",
+                  "3" = "$30,001-$50,000", 
+                  "4" = "$50,001-$70,000",
+                  "5" = "$70,001-$100,000", 
+                  "6" = ">$100,000"
+                  ),
+  income = fct_relevel(income, 
+                        "<$15,000", 
+                        "$15,001-$30,000",
+                        "$30,001-$50,000", 
+                        "$50,001-$70,000",
+                        "$70,001-$100,000"
+                        ),
+  
+father_education = recode(father_education,
+                            "1" = "less than high school",
+                            "2" = "high school degree",
+                            "3" = "some college degree",
+                            "4" = "college degree",
+                            "5" = "graduate degree"
+                            ),
+  father_education = fct_relevel(father_education,
+                            "less than high school",
+                            "high school degree",
+                            "some college degree",
+                            "college degree",
+                            "graduate degree"
+                            ),
+
+  ideal_diet_coded = recode(ideal_diet_coded,
+                            "1" = "portion control",
+                            "2" = "adding veggies/eating healthier food/adding fruit",
+                            "3" = "balance",
+                            "4" = "less sugar",
+                            "5" = "home cooked/organic",
+                            "6" = "current diet",
+                            "7" = "more protein",
+                            "8" = "unclear",
+                            ),
+  ideal_diet_coded = fct_relevel(ideal_diet_coded,
+                            "portion control",
+                            "adding veggies/eating healthier food/adding fruit",
+                            "balance",
+                            "less sugar",
+                            "home cooked/organic",
+                            "current diet",
+                            "more protein",
+                            "unclear"
+                            ))
+
+#checking how our data cleaning went
+#GPA Summary
+summary(as.numeric(food_list2$GPA))
+#Student's income Summary
+table(food_list2$income, useNA = "ifany")
+#Father's education Summary
+table(food_list2$father_education, useNA = "ifany")
+#Students' ideal diet summary
+table(food_list2$ideal_diet_coded, useNA = "ifany")
+```
+
+```{r }
+
+# Your R code here
+#gpa and father education
+food_list2 %>% filter(!is.na(father_education)) %>% # NA values are not plotted
+  
+  ggplot(aes(GPA, father_education)) +geom_boxplot(fill="#CA33FF")+scale_x_continuous(name = "Student's GPA")+scale_y_discrete(name="Father's Education Level")+ggtitle('Father Education Level vs Student GPA')+theme_bw(16)
+
+
+#gpa and income
+food_list2 %>% filter(!is.na(income)) %>% # NA values are not plotted
+  
+  ggplot(aes(GPA, income)) +geom_boxplot(fill="#0052B5")+scale_x_continuous(name = "Student's GPA")+scale_y_discrete(name="Student Income")+ggtitle('Income vs Student GPA')+theme_bw(15)
+
+#gpa and student diet
+
+food_list2 %>% filter(!is.na(ideal_diet_coded)) %>% # NA values are not plotted
+  
+  ggplot(aes(GPA, ideal_diet_coded)) +geom_boxplot(fill="#8AFF33")+scale_x_continuous(name = "Student's GPA")+scale_y_discrete(name="Ther Ideal Diet")+ggtitle('Students Ideal Diet vs Student GPA')+theme_bw(10)
+```
+
+**Discussion:** *From our visualizations above we can observe that A lower income is associated with a lower GPA. Similarly, students whose fathers have lower levels of education tend to have lower GPAs. Surprisingly, students whose fathers have graduate degrees also exhibit weaker academic performance.Interestingly, students who prefer diets with less sugar and those who practice protein control had higher GPAs, This could suggest that people who workout get higher GPA's since this is typically their diet. Unclear diest seem to get the worse GPA out of the group.These findings suggests that these individuals may possess unique characteristics that contribute to their academic success. *
+
